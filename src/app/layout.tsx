@@ -1,14 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Quicksand } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const quicksand = Quicksand({ 
+  subsets: ["latin"],
+  display: 'swap',
+});
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
   themeColor: '#0F766E',
+  viewportFit: 'cover',
 };
 
 export const metadata: Metadata = {
@@ -17,11 +21,15 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default',
+    statusBarStyle: 'black-translucent',
     title: 'Cohérence',
+    startupImage: '/icon.png',
   },
   formatDetection: {
     telephone: false,
+  },
+  icons: {
+    apple: '/icon.png',
   },
 };
 
@@ -33,9 +41,12 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <head>
-        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <link rel="apple-touch-icon" href="/icon.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Cohérence" />
       </head>
-      <body className={inter.className}>{children}</body>
+      <body className={quicksand.className}>{children}</body>
     </html>
   );
 }

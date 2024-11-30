@@ -149,7 +149,7 @@ export default function SetupForm({ initialValues, onStart }: SetupFormProps) {
 
         <div className="space-y-4">
           <label className="flex items-center justify-between text-lg group">
-            <span className="group-hover:text-teal-300 transition-colors">Exercise</span>
+            <span className="group-hover:text-teal-300 transition-colors">Durée</span>
             <span className="font-mono bg-white/10 px-3 py-1 rounded-lg ml-4">{values.duration}min</span>
           </label>
           <input

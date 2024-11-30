@@ -25,7 +25,20 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-teal-700 to-blue-900 text-white">
       <div className="max-w-md mx-auto min-h-screen flex flex-col items-center justify-center p-4 md:p-8">
-        <h1 className="text-4xl font-light text-center mb-12">Cohérence 🫀</h1>
+        <div 
+          className="text-6xl mb-12 transition-transform duration-[4s] ease-in-out animate-pulse"
+          style={{ 
+            animation: 'breathe 8s infinite ease-in-out',
+          }}
+        >
+          🫀
+        </div>
+        <style jsx>{`
+          @keyframes breathe {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+          }
+        `}</style>
         
         {isExerciseActive ? (
           <BreathingExercise

@@ -138,15 +138,29 @@ export default function BreathingExercise({ settings, onStop }: BreathingExercis
         {formatTime(remainingTime)}
       </div>
 
-      <div className="relative w-56 h-56 mx-auto">
+      <div className="relative w-64 h-64 mx-auto">
         <div
-          className="absolute inset-0 bg-white/10 rounded-full backdrop-blur-sm transition-transform duration-100"
-          style={{ transform: `scale(${scale})` }}
+          className="absolute inset-0 rounded-full"
+          style={{
+            background: 'rgba(255, 255, 255, 0.1)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+          }}
+        />
+        <div
+          className="absolute inset-0 rounded-full transition-transform will-change-transform"
+          style={{
+            transform: `scale(${scale})`,
+            transition: 'transform 1s cubic-bezier(0.4, 0, 0.2, 1)',
+            background: 'rgba(255, 255, 255, 0.1)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+          }}
         />
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <div className="text-2xl font-light mb-2">
             {currentPhase === 'inhale' ? 'Inspire' : 
-             currentPhase === 'hold' ? 'Retiens' : 'Exhale'}
+             currentPhase === 'hold' ? 'Retiens' : 'Expire'}
           </div>
           <div className="text-4xl font-mono">
             {phaseTimeLeft}
