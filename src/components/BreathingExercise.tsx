@@ -86,12 +86,13 @@ export default function BreathingExercise({ settings, onStop }: BreathingExercis
         case 'inhale':
           playSound('inhale');
           setScale(1);
-          // Animate scale from 1 to 1.3 over inhaleTime seconds
-          const inhaleSteps = settings.inhaleTime * 60; // 60fps
+          const inhaleSteps = settings.inhaleTime * 30; // 30fps for smoother performance
           let inhaleStep = 0;
           const inhaleInterval = setInterval(() => {
             inhaleStep++;
-            setScale(1 + (0.3 * inhaleStep / inhaleSteps));
+            const progress = inhaleStep / inhaleSteps;
+            const easeProgress = 1 - Math.cos((progress * Math.PI) / 2); // Easing function
+            setScale(1 + (0.3 * easeProgress));
             if (inhaleStep >= inhaleSteps) {
               clearInterval(inhaleInterval);
               if (settings.holdTime > 0) {
@@ -100,7 +101,7 @@ export default function BreathingExercise({ settings, onStop }: BreathingExercis
                 setCurrentPhase('exhale');
               }
             }
-          }, 1000 / 60);
+          }, 1000 / 30);
           break;
 
         case 'hold':
@@ -111,17 +112,18 @@ export default function BreathingExercise({ settings, onStop }: BreathingExercis
 
         case 'exhale':
           playSound('exhale');
-          // Animate scale from 1.3 to 1 over exhaleTime seconds
-          const exhaleSteps = settings.exhaleTime * 60; // 60fps
+          const exhaleSteps = settings.exhaleTime * 30; // 30fps for smoother performance
           let exhaleStep = 0;
           const exhaleInterval = setInterval(() => {
             exhaleStep++;
-            setScale(1.3 - (0.3 * exhaleStep / exhaleSteps));
+            const progress = exhaleStep / exhaleSteps;
+            const easeProgress = Math.sin((progress * Math.PI) / 2); // Easing function
+            setScale(1.3 - (0.3 * easeProgress));
             if (exhaleStep >= exhaleSteps) {
               clearInterval(exhaleInterval);
               setCurrentPhase('inhale');
             }
-          }, 1000 / 60);
+          }, 1000 / 30);
           break;
       }
     };
@@ -148,10 +150,9 @@ export default function BreathingExercise({ settings, onStop }: BreathingExercis
           }}
         />
         <div
-          className="absolute inset-0 rounded-full transition-transform will-change-transform"
+          className="absolute inset-0 rounded-full transform-gpu"
           style={{
             transform: `scale(${scale})`,
-            transition: 'transform 1s cubic-bezier(0.4, 0, 0.2, 1)',
             background: 'rgba(255, 255, 255, 0.1)',
             backdropFilter: 'blur(8px)',
             WebkitBackdropFilter: 'blur(8px)',

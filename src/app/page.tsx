@@ -24,11 +24,11 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-teal-700 to-blue-900 text-white">
-      <div className="max-w-md mx-auto min-h-screen flex flex-col items-center justify-center p-4 md:p-8">
+      <div className="max-w-md mx-auto min-h-screen flex flex-col items-center justify-center p-2 md:p-4">
         <div 
-          className="text-6xl mb-12 transition-transform duration-[4s] ease-in-out animate-pulse"
+          className="text-6xl mb-8 transform-gpu"
           style={{ 
-            animation: 'breathe 8s infinite ease-in-out',
+            animation: 'breathe 4s infinite ease-in-out',
           }}
         >
           🫀
@@ -36,7 +36,7 @@ export default function Home() {
         <style jsx>{`
           @keyframes breathe {
             0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+            50% { transform: scale(1.3); }
           }
         `}</style>
         

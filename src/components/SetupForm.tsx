@@ -156,7 +156,7 @@ export default function SetupForm({ initialValues, onStart }: SetupFormProps) {
             type="range"
             name="duration"
             min="1"
-            max="20"
+            max="10"
             value={values.duration}
             onChange={handleChange}
             className="w-full accent-teal-500"
