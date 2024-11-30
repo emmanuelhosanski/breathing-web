@@ -136,7 +136,7 @@ export default function BreathingExercise({ settings, onStop }: BreathingExercis
       <audio ref={inhaleAudioRef} src="/inhale.mp3" />
       <audio ref={exhaleAudioRef} src="/exhale.mp3" />
       
-      <div className="text-5xl font-light font-mono">
+      <div className="text-5xl font-light">
         {formatTime(remainingTime)}
       </div>
 
@@ -163,7 +163,7 @@ export default function BreathingExercise({ settings, onStop }: BreathingExercis
             {currentPhase === 'inhale' ? 'Inspire' : 
              currentPhase === 'hold' ? 'Retiens' : 'Expire'}
           </div>
-          <div className="text-4xl font-mono">
+          <div className="text-4xl">
             {phaseTimeLeft}
           </div>
         </div>
