@@ -102,7 +102,7 @@ export default function SetupForm({ initialValues, onStart }: SetupFormProps) {
         <div className="space-y-4">
           <label className="flex items-center justify-between text-lg group">
             <span className="group-hover:text-teal-300 transition-colors">Inspiration</span>
-            <span className="font-Quicksand bg-white/10 px-3 py-1 rounded-lg ml-4">{values.inhaleTime} s</span>
+            <span className="bg-white/10 px-3 py-1 rounded-lg ml-4">{values.inhaleTime} s</span>
           </label>
           <input
             type="range"
@@ -118,7 +118,7 @@ export default function SetupForm({ initialValues, onStart }: SetupFormProps) {
         <div className="space-y-4">
           <label className="flex items-center justify-between text-lg group">
             <span className="group-hover:text-teal-300 transition-colors">Suspension</span>
-            <span className="font-Quicksand bg-white/10 px-3 py-1 rounded-lg ml-4">{values.holdTime} s</span>
+            <span className="bg-white/10 px-3 py-1 rounded-lg ml-4">{values.holdTime} s</span>
           </label>
           <input
             type="range"
@@ -134,7 +134,7 @@ export default function SetupForm({ initialValues, onStart }: SetupFormProps) {
         <div className="space-y-4">
           <label className="flex items-center justify-between text-lg group">
             <span className="group-hover:text-teal-300 transition-colors">Expiration</span>
-            <span className="font-Quicksand bg-white/10 px-3 py-1 rounded-lg ml-4">{values.exhaleTime} s</span>
+            <span className="bg-white/10 px-3 py-1 rounded-lg ml-4">{values.exhaleTime} s</span>
           </label>
           <input
             type="range"
@@ -150,7 +150,7 @@ export default function SetupForm({ initialValues, onStart }: SetupFormProps) {
         <div className="space-y-4">
           <label className="flex items-center justify-between text-lg group">
             <span className="group-hover:text-teal-300 transition-colors">Durée</span>
-            <span className="font-Quicksand bg-white/10 px-3 py-1 rounded-lg ml-4">{values.duration} min</span>
+            <span className="bg-white/10 px-3 py-1 rounded-lg ml-4">{values.duration} min</span>
           </label>
           <input
             type="range"
