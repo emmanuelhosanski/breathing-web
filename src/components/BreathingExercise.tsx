@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { formatTime } from '@/utils/formatTime';
 
 interface BreathingExerciseProps {
@@ -31,7 +31,6 @@ export default function BreathingExercise({ settings, onStop }: BreathingExercis
 
     const steps = 20;
     const stepTime = duration / steps;
-    const volumeStep = audio.volume / steps;
     let currentStep = 0;
 
     fadeIntervalRef.current = setInterval(() => {
@@ -76,22 +75,20 @@ export default function BreathingExercise({ settings, onStop }: BreathingExercis
     }, stepTime);
   };
 
-  const playSound = (phase: Phase) => {
+  const playSound = useCallback((phase: Phase) => {
     const currentAudio = phase === 'inhale' ? inhaleAudioRef.current : exhaleAudioRef.current;
 
-    // Start new sound immediately
     if (currentAudio) {
       fadeIn(currentAudio);
     }
 
-    // Fade out previous sound with a slight delay to create overlap
     const otherAudio = phase === 'inhale' ? exhaleAudioRef.current : inhaleAudioRef.current;
     if (otherAudio && otherAudio.volume > 0) {
       setTimeout(() => {
         fadeOut(otherAudio);
-      }, 200); // 200ms delay before starting fade out
+      }, 200);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -156,7 +153,7 @@ export default function BreathingExercise({ settings, onStop }: BreathingExercis
         clearInterval(phaseTimerRef.current);
       }
     };
-  }, [currentPhase, settings]);
+  }, [currentPhase, settings.inhaleTime, settings.holdTime, settings.exhaleTime]);
 
   useEffect(() => {
     const animatePhase = () => {
@@ -174,8 +171,7 @@ export default function BreathingExercise({ settings, onStop }: BreathingExercis
             const easeProgress = 1 - Math.cos((progress * Math.PI) / 2);
             setScale(1 + (0.3 * easeProgress));
 
-            // Start fade out slightly later to create overlap with next phase
-            if (inhaleStep === inhaleSteps - 3) { // 3 frames = ~100ms at 30fps
+            if (inhaleStep === inhaleSteps - 3) {
               const audio = inhaleAudioRef.current;
               if (audio) {
                 fadeOut(audio);
@@ -209,8 +205,7 @@ export default function BreathingExercise({ settings, onStop }: BreathingExercis
             const easeProgress = Math.sin((progress * Math.PI) / 2);
             setScale(1.3 - (0.3 * easeProgress));
 
-            // Start fade out slightly later to create overlap with next phase
-            if (exhaleStep === exhaleSteps - 3) { // 3 frames = ~100ms at 30fps
+            if (exhaleStep === exhaleSteps - 3) {
               const audio = exhaleAudioRef.current;
               if (audio) {
                 fadeOut(audio);
@@ -237,7 +232,7 @@ export default function BreathingExercise({ settings, onStop }: BreathingExercis
 
     const cleanup = animatePhase();
     return cleanup;
-  }, [currentPhase, settings]);
+  }, [currentPhase, settings.inhaleTime, settings.holdTime, settings.exhaleTime, playSound]);
 
   return (
     <div className="space-y-16 text-center">
