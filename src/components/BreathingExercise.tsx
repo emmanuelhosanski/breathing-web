@@ -13,6 +13,13 @@ interface BreathingExerciseProps {
 
 type Phase = 'inhale' | 'hold' | 'exhale';
 
+interface AudioWithGain {
+  audio: HTMLAudioElement;
+  gainNode: GainNode;
+  context: AudioContext;
+  source: MediaElementAudioSourceNode;
+}
+
 export default function BreathingExercise({ settings, onStop }: BreathingExerciseProps) {
   const [remainingTime, setRemainingTime] = useState(settings.duration * 60);
   const [currentPhase, setCurrentPhase] = useState<Phase>('inhale');
@@ -22,6 +29,45 @@ export default function BreathingExercise({ settings, onStop }: BreathingExercis
   const exhaleAudioRef = useRef<HTMLAudioElement | null>(null);
   const endAudioRef = useRef<HTMLAudioElement | null>(null);
   const phaseTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const audioContextRef = useRef<AudioWithGain | null>(null);
+
+  const setupAudio = (audioElement: HTMLAudioElement) => {
+    const context = new AudioContext();
+    const source = context.createMediaElementSource(audioElement);
+    const gainNode = context.createGain();
+    source.connect(gainNode);
+    gainNode.connect(context.destination);
+    return { audio: audioElement, gainNode, context, source };
+  };
+
+  const fadeOutAndStop = (audioWithGain: AudioWithGain, duration: number = 0.5) => {
+    const { gainNode, context } = audioWithGain;
+    const currentTime = context.currentTime;
+    gainNode.gain.setValueAtTime(gainNode.gain.value, currentTime);
+    gainNode.gain.linearRampToValueAtTime(0, currentTime + duration);
+    setTimeout(() => {
+      audioWithGain.audio.pause();
+      audioWithGain.audio.currentTime = 0;
+      gainNode.gain.setValueAtTime(1, context.currentTime);
+    }, duration * 1000);
+  };
+
+  const playSound = async (phase: Phase) => {
+    if (audioContextRef.current) {
+      fadeOutAndStop(audioContextRef.current);
+    }
+
+    const audioElement = phase === 'inhale' ? inhaleAudioRef.current : exhaleAudioRef.current;
+    if (!audioElement) return;
+
+    try {
+      audioContextRef.current = setupAudio(audioElement);
+      audioElement.currentTime = 0;
+      await audioElement.play();
+    } catch (error) {
+      console.error('Error playing sound:', error);
+    }
+  };
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -34,14 +80,19 @@ export default function BreathingExercise({ settings, onStop }: BreathingExercis
           }
           setTimeout(() => {
             onStop();
-          }, 1000); // Wait for the end sound to play before stopping
+          }, 1000);
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
 
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+      if (audioContextRef.current) {
+        fadeOutAndStop(audioContextRef.current);
+      }
+    };
   }, [onStop]);
 
   useEffect(() => {
@@ -78,31 +129,24 @@ export default function BreathingExercise({ settings, onStop }: BreathingExercis
   }, [currentPhase, settings]);
 
   useEffect(() => {
-    const playSound = (phase: Phase) => {
-      if (phase === 'inhale' && inhaleAudioRef.current) {
-        inhaleAudioRef.current.currentTime = 0;
-        inhaleAudioRef.current.play().catch(console.error);
-      } else if (phase === 'exhale' && exhaleAudioRef.current) {
-        exhaleAudioRef.current.currentTime = 0;
-        exhaleAudioRef.current.play().catch(console.error);
-      }
-    };
-
     const animatePhase = () => {
       switch (currentPhase) {
         case 'inhale':
           playSound('inhale');
           setScale(1);
-          const inhaleSteps = settings.inhaleTime * 30; // 30fps for smoother performance
+          const inhaleSteps = settings.inhaleTime * 30;
           let inhaleStep = 0;
           const inhaleInterval = setInterval(() => {
             inhaleStep++;
             const progress = inhaleStep / inhaleSteps;
-            const easeProgress = 1 - Math.cos((progress * Math.PI) / 2); // Easing function
+            const easeProgress = 1 - Math.cos((progress * Math.PI) / 2);
             setScale(1 + (0.3 * easeProgress));
             if (inhaleStep >= inhaleSteps) {
               clearInterval(inhaleInterval);
               if (settings.holdTime > 0) {
+                if (audioContextRef.current) {
+                  fadeOutAndStop(audioContextRef.current);
+                }
                 setCurrentPhase('hold');
               } else {
                 setCurrentPhase('exhale');
@@ -119,15 +163,18 @@ export default function BreathingExercise({ settings, onStop }: BreathingExercis
 
         case 'exhale':
           playSound('exhale');
-          const exhaleSteps = settings.exhaleTime * 30; // 30fps for smoother performance
+          const exhaleSteps = settings.exhaleTime * 30;
           let exhaleStep = 0;
           const exhaleInterval = setInterval(() => {
             exhaleStep++;
             const progress = exhaleStep / exhaleSteps;
-            const easeProgress = Math.sin((progress * Math.PI) / 2); // Easing function
+            const easeProgress = Math.sin((progress * Math.PI) / 2);
             setScale(1.3 - (0.3 * easeProgress));
             if (exhaleStep >= exhaleSteps) {
               clearInterval(exhaleInterval);
+              if (audioContextRef.current) {
+                fadeOutAndStop(audioContextRef.current);
+              }
               setCurrentPhase('inhale');
             }
           }, 1000 / 30);
@@ -136,6 +183,12 @@ export default function BreathingExercise({ settings, onStop }: BreathingExercis
     };
 
     animatePhase();
+
+    return () => {
+      if (audioContextRef.current) {
+        fadeOutAndStop(audioContextRef.current);
+      }
+    };
   }, [currentPhase, settings]);
 
   return (
