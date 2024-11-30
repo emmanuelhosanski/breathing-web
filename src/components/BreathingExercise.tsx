@@ -13,13 +13,6 @@ interface BreathingExerciseProps {
 
 type Phase = 'inhale' | 'hold' | 'exhale';
 
-interface AudioWithGain {
-  audio: HTMLAudioElement;
-  gainNode: GainNode;
-  context: AudioContext;
-  source: MediaElementAudioSourceNode;
-}
-
 export default function BreathingExercise({ settings, onStop }: BreathingExerciseProps) {
   const [remainingTime, setRemainingTime] = useState(settings.duration * 60);
   const [currentPhase, setCurrentPhase] = useState<Phase>('inhale');
@@ -29,43 +22,74 @@ export default function BreathingExercise({ settings, onStop }: BreathingExercis
   const exhaleAudioRef = useRef<HTMLAudioElement | null>(null);
   const endAudioRef = useRef<HTMLAudioElement | null>(null);
   const phaseTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const audioContextRef = useRef<AudioWithGain | null>(null);
+  const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const setupAudio = (audioElement: HTMLAudioElement) => {
-    const context = new AudioContext();
-    const source = context.createMediaElementSource(audioElement);
-    const gainNode = context.createGain();
-    source.connect(gainNode);
-    gainNode.connect(context.destination);
-    return { audio: audioElement, gainNode, context, source };
-  };
-
-  const fadeOutAndStop = (audioWithGain: AudioWithGain, duration: number = 0.5) => {
-    const { gainNode, context } = audioWithGain;
-    const currentTime = context.currentTime;
-    gainNode.gain.setValueAtTime(gainNode.gain.value, currentTime);
-    gainNode.gain.linearRampToValueAtTime(0, currentTime + duration);
-    setTimeout(() => {
-      audioWithGain.audio.pause();
-      audioWithGain.audio.currentTime = 0;
-      gainNode.gain.setValueAtTime(1, context.currentTime);
-    }, duration * 1000);
-  };
-
-  const playSound = async (phase: Phase) => {
-    if (audioContextRef.current) {
-      fadeOutAndStop(audioContextRef.current);
+  const fadeOut = (audio: HTMLAudioElement, duration: number = 200) => {
+    if (fadeIntervalRef.current) {
+      clearInterval(fadeIntervalRef.current);
     }
 
-    const audioElement = phase === 'inhale' ? inhaleAudioRef.current : exhaleAudioRef.current;
-    if (!audioElement) return;
+    const steps = 20;
+    const stepTime = duration / steps;
+    const volumeStep = audio.volume / steps;
+    let currentStep = 0;
 
-    try {
-      audioContextRef.current = setupAudio(audioElement);
-      audioElement.currentTime = 0;
-      await audioElement.play();
-    } catch (error) {
-      console.error('Error playing sound:', error);
+    fadeIntervalRef.current = setInterval(() => {
+      currentStep++;
+      const newVolume = Math.max(0, 1 - (currentStep / steps));
+      audio.volume = newVolume;
+
+      if (currentStep >= steps) {
+        if (fadeIntervalRef.current) {
+          clearInterval(fadeIntervalRef.current);
+        }
+        audio.pause();
+        audio.currentTime = 0;
+        audio.volume = 1;
+      }
+    }, stepTime);
+  };
+
+  const fadeIn = (audio: HTMLAudioElement, duration: number = 200) => {
+    audio.volume = 0;
+    audio.currentTime = 0;
+    audio.play().catch(console.error);
+
+    if (fadeIntervalRef.current) {
+      clearInterval(fadeIntervalRef.current);
+    }
+
+    const steps = 20;
+    const stepTime = duration / steps;
+    let currentStep = 0;
+
+    fadeIntervalRef.current = setInterval(() => {
+      currentStep++;
+      const newVolume = Math.min(1, currentStep / steps);
+      audio.volume = newVolume;
+
+      if (currentStep >= steps) {
+        if (fadeIntervalRef.current) {
+          clearInterval(fadeIntervalRef.current);
+        }
+      }
+    }, stepTime);
+  };
+
+  const playSound = (phase: Phase) => {
+    const currentAudio = phase === 'inhale' ? inhaleAudioRef.current : exhaleAudioRef.current;
+
+    // Start new sound immediately
+    if (currentAudio) {
+      fadeIn(currentAudio);
+    }
+
+    // Fade out previous sound with a slight delay to create overlap
+    const otherAudio = phase === 'inhale' ? exhaleAudioRef.current : inhaleAudioRef.current;
+    if (otherAudio && otherAudio.volume > 0) {
+      setTimeout(() => {
+        fadeOut(otherAudio);
+      }, 200); // 200ms delay before starting fade out
     }
   };
 
@@ -89,9 +113,15 @@ export default function BreathingExercise({ settings, onStop }: BreathingExercis
 
     return () => {
       clearInterval(timer);
-      if (audioContextRef.current) {
-        fadeOutAndStop(audioContextRef.current);
+      if (fadeIntervalRef.current) {
+        clearInterval(fadeIntervalRef.current);
       }
+      [inhaleAudioRef.current, exhaleAudioRef.current].forEach(audio => {
+        if (audio) {
+          audio.pause();
+          audio.currentTime = 0;
+        }
+      });
     };
   }, [onStop]);
 
@@ -130,23 +160,31 @@ export default function BreathingExercise({ settings, onStop }: BreathingExercis
 
   useEffect(() => {
     const animatePhase = () => {
+      let phaseInterval: NodeJS.Timeout | null = null;
+
       switch (currentPhase) {
         case 'inhale':
           playSound('inhale');
           setScale(1);
           const inhaleSteps = settings.inhaleTime * 30;
           let inhaleStep = 0;
-          const inhaleInterval = setInterval(() => {
+          phaseInterval = setInterval(() => {
             inhaleStep++;
             const progress = inhaleStep / inhaleSteps;
             const easeProgress = 1 - Math.cos((progress * Math.PI) / 2);
             setScale(1 + (0.3 * easeProgress));
+
+            // Start fade out slightly later to create overlap with next phase
+            if (inhaleStep === inhaleSteps - 3) { // 3 frames = ~100ms at 30fps
+              const audio = inhaleAudioRef.current;
+              if (audio) {
+                fadeOut(audio);
+              }
+            }
+
             if (inhaleStep >= inhaleSteps) {
-              clearInterval(inhaleInterval);
+              if (phaseInterval) clearInterval(phaseInterval);
               if (settings.holdTime > 0) {
-                if (audioContextRef.current) {
-                  fadeOutAndStop(audioContextRef.current);
-                }
                 setCurrentPhase('hold');
               } else {
                 setCurrentPhase('exhale');
@@ -165,30 +203,40 @@ export default function BreathingExercise({ settings, onStop }: BreathingExercis
           playSound('exhale');
           const exhaleSteps = settings.exhaleTime * 30;
           let exhaleStep = 0;
-          const exhaleInterval = setInterval(() => {
+          phaseInterval = setInterval(() => {
             exhaleStep++;
             const progress = exhaleStep / exhaleSteps;
             const easeProgress = Math.sin((progress * Math.PI) / 2);
             setScale(1.3 - (0.3 * easeProgress));
-            if (exhaleStep >= exhaleSteps) {
-              clearInterval(exhaleInterval);
-              if (audioContextRef.current) {
-                fadeOutAndStop(audioContextRef.current);
+
+            // Start fade out slightly later to create overlap with next phase
+            if (exhaleStep === exhaleSteps - 3) { // 3 frames = ~100ms at 30fps
+              const audio = exhaleAudioRef.current;
+              if (audio) {
+                fadeOut(audio);
               }
+            }
+
+            if (exhaleStep >= exhaleSteps) {
+              if (phaseInterval) clearInterval(phaseInterval);
               setCurrentPhase('inhale');
             }
           }, 1000 / 30);
           break;
       }
+
+      return () => {
+        if (phaseInterval) {
+          clearInterval(phaseInterval);
+        }
+        if (fadeIntervalRef.current) {
+          clearInterval(fadeIntervalRef.current);
+        }
+      };
     };
 
-    animatePhase();
-
-    return () => {
-      if (audioContextRef.current) {
-        fadeOutAndStop(audioContextRef.current);
-      }
-    };
+    const cleanup = animatePhase();
+    return cleanup;
   }, [currentPhase, settings]);
 
   return (
