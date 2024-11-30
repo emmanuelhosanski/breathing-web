@@ -20,6 +20,7 @@ export default function BreathingExercise({ settings, onStop }: BreathingExercis
   const [scale, setScale] = useState(1);
   const inhaleAudioRef = useRef<HTMLAudioElement | null>(null);
   const exhaleAudioRef = useRef<HTMLAudioElement | null>(null);
+  const endAudioRef = useRef<HTMLAudioElement | null>(null);
   const phaseTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -27,7 +28,13 @@ export default function BreathingExercise({ settings, onStop }: BreathingExercis
       setRemainingTime(prev => {
         if (prev <= 1) {
           clearInterval(timer);
-          onStop();
+          if (endAudioRef.current) {
+            endAudioRef.current.currentTime = 0;
+            endAudioRef.current.play().catch(console.error);
+          }
+          setTimeout(() => {
+            onStop();
+          }, 1000); // Wait for the end sound to play before stopping
           return 0;
         }
         return prev - 1;
@@ -135,6 +142,7 @@ export default function BreathingExercise({ settings, onStop }: BreathingExercis
     <div className="space-y-16 text-center">
       <audio ref={inhaleAudioRef} src="/inhale.mp3" />
       <audio ref={exhaleAudioRef} src="/exhale.mp3" />
+      <audio ref={endAudioRef} src="/end.mp3" />
       
       <div className="text-5xl font-light">
         {formatTime(remainingTime)}
